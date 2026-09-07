@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: event-hub
+  description: "Las organizaciones necesitan una plataforma para gestionar eventos y sus inscripciones. Los usuarios deben poder registrarse, consultar eventos disponibles, ver sus detalles y gestionar sus inscripciones. Los administradores deben poder crear, modificar y eliminar eventos y controlar los cupos disponibles. La aplicación debe implementarse como una arquitectura de microservicios con servicios independientes para usuarios, eventos e inscripciones, exponiendo sus capacidades mediante un API Gateway. El frontend debe desarrollarse con React y consumir las APIs del backend. La solución debe ser contenerizada y desplegable en OpenShift utilizando OpenShift Pipelines para CI y OpenShift GitOps para CD.\nMicroservicios:\n\n1. User Service\n\nCrear usuarios\nConsultar usuarios\nActualizar información\nAutenticación básica\n\n2. Event Service\n\nCrear eventos\nListar eventos\nConsultar detalles\nActualizar/eliminar eventos\nControlar cupos disponibles\n\n3. Registration Service\n\nRegistrar usuarios en eventos\nCancelar inscripciones\nConsultar inscripciones\nValidar disponibilidad de cupos\n\n4. API Gateway\n\nPunto de entrada único\nRouting hacia microservicios\nValidación de autenticación\nManejo básico de errores\n\n5. React Frontend\n\nLogin\nDashboard\nLista de eventos\nDetalle de evento\nRegistro a evento\nMis inscripciones\nAdministración de eventos\n"
+  annotations:
+    github.com/project-slug: red-hat-nella/event-hub
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - openshift
+    - spec-driven
+    - multi-runtime
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:default/developers
+  system: sdd-platform

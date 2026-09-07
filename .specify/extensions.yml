@@ -1,0 +1,13 @@
+schema: 1
+installed:
+  - redhat-openshift-sdd
+settings:
+  auto_execute_hooks: true
+hooks:
+  after_implement:
+    - extension: redhat-openshift-sdd
+      command: sdd.deliver
+      enabled: true
+      optional: false
+      priority: 100
+      description: Publica en main y supervisa la entrega administrada en OpenShift.

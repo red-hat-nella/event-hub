@@ -1,0 +1,9 @@
+site_name: event-hub
+site_description: Documentación del componente Spec-Driven para OpenShift
+nav:
+  - Inicio: README.md
+  - Contexto de producto: docs/product-context.md
+  - Operación en OpenShift: docs/operations/openshift-deployment.md
+plugins:
+  - techdocs-core
+

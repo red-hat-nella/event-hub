@@ -1,0 +1,14 @@
+schemaVersion: "1.0"
+componentId: event-hub
+orchestratorUrl: https://sdd-orchestrator-sdd-ai-system.apps.cluster-gfllb.dyn.redhatworkshops.io
+statusUrl: https://sdd-orchestrator-sdd-ai-system.apps.cluster-gfllb.dyn.redhatworkshops.io/v1/components/event-hub/latest
+traceUrl: https://sdd-orchestrator-sdd-ai-system.apps.cluster-gfllb.dyn.redhatworkshops.io/ui/components/event-hub
+branch: main
+automation:
+  publish: true
+  completionGate: all-tasks
+  workloadContract: .sdd/workloads.yaml
+maxRepairAttempts: 3
+pollSeconds: 10
+idleTimeoutSeconds: 1800
+timeoutSeconds: 7200

@@ -1,0 +1,12 @@
+{
+  "$schema": "./workloads.schema.json",
+  "apiVersion": "sdd.platform.redhat.com/v1alpha1",
+  "kind": "WorkloadSet",
+  "metadata": { "name": "event-hub" },
+  "spec": {
+    "exposure": { "routeName": "event-hub", "healthPath": "/healthz" },
+    "workloads": [],
+    "resources": [],
+    "managedSecrets": []
+  }
+}

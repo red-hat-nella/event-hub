@@ -1,0 +1,51 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: sdd-source-validation-pr
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
+spec:
+  pipelineRef:
+    resolver: cluster
+    params:
+      - name: kind
+        value: pipeline
+      - name: name
+        value: sdd-source-validation
+      - name: namespace
+        value: sdd-platform
+  params:
+    - name: REPO_URL
+      value: "{{ repo_url }}"
+    - name: REVISION
+      value: "{{ revision }}"
+    - name: GOVERNANCE_VERSION
+      value: 1.2.0
+    - name: REQUIRE_DEPLOYMENT_ARTIFACTS
+      value: "false"
+    - name: POLICY_SHA256
+      value: 29894c18981ccb85d29963efaef90419380d1af226a18242e18ad98339d6c65b
+  taskRunTemplate:
+    # Identidad y UID no-root deterministas para Tasks y PVC compartido.
+    serviceAccountName: sdd-ci
+    podTemplate:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    - name: git-auth
+      secret:
+        secretName: "{{ git_auth_secret }}"

@@ -1,0 +1,16 @@
+schemaVersion: "1.0"
+governance:
+  preset: redhat-openshift-sdd
+  version: 0.4.0
+  status: DECLARED
+  releaseUrl: https://github.com/red-hat-nella/sdd-platform-bootstrap/tree/main/governance/spec-kit/presets/redhat-openshift-sdd
+  constitutionSha256: c5a466956169471fdb68d90397abb8edc538af85c33245cd0262b8d0f2128ddf
+  policySha256: 29894c18981ccb85d29963efaef90419380d1af226a18242e18ad98339d6c65b
+platform:
+  profile: openshift-dev
+  status: PENDING_VALIDATION
+  delivery:
+    mode: orchestrated
+    pipeline: shared
+    gitopsState: platform-repository
+    topology: multi-workload
