@@ -30,25 +30,6 @@ replicas:
   - name: registration-service
     count: 1
 
-# Transformer de imágenes: se deja `newName` igual al placeholder de
-# `.sdd/workloads.yaml` (sin `newTag`) a propósito. Los placeholders
-# (`IMAGE_FRONTEND`, etc.) son referencias de imagen "bare" sin repositorio
-# ni tag — el SDD Orchestrator los reemplaza por una referencia inmutable
-# por digest (`<registry>/<repo>@sha256:...`) durante la etapa `build`/
-# `publish` (plan.md §10 y §12). NO se fija ningún `newTag` (ni siquiera
-# uno de desarrollo) porque cualquier tag mutable —y en particular
-# `:latest`— violaría `policies/conftest/openshift.rego`
-# (`deny` "usa el tag mutable latest"); dejar el placeholder intacto es lo
-# único que garantiza que el manifiesto renderizado nunca contenga
-# `:latest` antes de que el orquestador sustituya por el digest real.
-images:
-  - name: IMAGE_FRONTEND
-    newName: IMAGE_FRONTEND
-  - name: IMAGE_API_GATEWAY
-    newName: IMAGE_API_GATEWAY
-  - name: IMAGE_USER_SERVICE
-    newName: IMAGE_USER_SERVICE
-  - name: IMAGE_EVENT_SERVICE
-    newName: IMAGE_EVENT_SERVICE
-  - name: IMAGE_REGISTRATION_SERVICE
-    newName: IMAGE_REGISTRATION_SERVICE
+# El orquestador sustituye los placeholders directamente en las bases.
+# No repetirlos en images/newName: al sustituirlos por referencias con
+# digest, Kustomize puede concatenar el digest y generar InvalidImageName.
