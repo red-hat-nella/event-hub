@@ -145,14 +145,14 @@ spec:
               memory: 256Mi
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /internal/healthz
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20
             timeoutSeconds: 3
           readinessProbe:
             httpGet:
-              path: /readyz
+              path: /internal/readyz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
