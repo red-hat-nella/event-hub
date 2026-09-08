@@ -2,6 +2,7 @@
 
 # ---- Build stage ----
 FROM node:20-alpine AS build
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
@@ -18,6 +19,7 @@ RUN npm run build
 # Prisma —"prisma"— corre "migrate deploy" en el initContainer del mismo
 # Deployment y solo esta vive como devDependency) ----
 FROM node:20-alpine AS runtime
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production \
     PORT=3000 \
     HOME=/tmp
