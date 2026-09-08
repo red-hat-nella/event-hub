@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Sin nuevas tablas/migraciones. User conserva id, name, email único, passwordHash, role y timestamps. Event conserva modelo vigente. Registration mantiene id/userId/eventId, ACTIVE/CANCELLED, createdAt/cancelledAt y snapshots de nombre/fecha/ubicación. Se conservan índice de inscripción activa e idempotencia.
+Sin nuevas tablas ni migraciones de esquema. La ampliación de 2026-09-08 añade una migración de datos con 12 eventos Demo e identificadores estables; no sobrescribe datos existentes. User conserva id, name, email único, passwordHash, role y timestamps. Event conserva modelo vigente. Registration mantiene id/userId/eventId, ACTIVE/CANCELLED, createdAt/cancelledAt y snapshots de nombre/fecha/ubicación. Se conservan índice de inscripción activa e idempotencia.
 
 ## DTO público Registration
 

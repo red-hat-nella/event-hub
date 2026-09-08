@@ -1,5 +1,15 @@
 # Operación en OpenShift
 
+## Catálogo inicial y revisión de entrega (2026-09-08)
+
+La migración `20260908090000_seed_demo_catalog` añade 12 eventos explícitamente Demo (no actividades reales), dos por categoría, entre 14 y 91 días después de su primera ejecución. Usa UUID estables y no modifica filas en conflicto. Prisma la ejecuta una sola vez mediante el initContainer migrate existente de event-service; reinicios no recrean eventos eliminados, ni cambian fechas o cupos. Rollback de imagen conserva estos datos. La administración ordinaria permite editarlos o retirarlos sin borrar otros eventos.
+
+Prueba local segura: `node tools/test-event-catalog-seed.mjs` usa exclusivamente el contenedor local `event-hub_db-events_1`, base `account_experience_test` y un esquema aleatorio dentro de una transacción revertida. Nunca apuntar suites destructivas al clúster.
+
+`node --test tools/test-sdd-delivery.mjs` verifica el monitor sin red. `watch` devuelve 21 si SUCCEEDED corresponde a otro SHA o carece de SHA; devuelve 22 si falta Route HTTPS. Esos estados son bloqueos de evidencia/activación de entrega, no motivos para inventar cambios o desplegar directamente. El estado del orquestador debe corresponder al HEAD publicado.
+
+Solo existe el perfil `openshift-dev`/Project `event-hub-dev`. Una Route accesible no equivale a promoción a producción. Destino/perfil productivo y activación de una nueva entrega después de SUCCEEDED: responsabilidad de plataforma, PENDING_VALIDATION; no se leen Secrets ni se modifica el controlador desde este repositorio.
+
 **Estado:** `PENDING_VALIDATION` (despliegue real en clúster) — el código,
 los manifiestos y las validaciones locales están completos y verificados.
 **Gobernanza:** `1.2.0`

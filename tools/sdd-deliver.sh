@@ -103,6 +103,8 @@ is_platform_evidence() {
 
 watch_delivery() {
   local timeout idle_timeout poll trace started last_progress now payload phase evidence route signature previous_signature
+  local expected_commit deployed_commit
+  expected_commit="$(git rev-parse HEAD)"
   timeout="$(yaml_value timeoutSeconds)"; timeout="${timeout:-1800}"
   idle_timeout="$(yaml_value idleTimeoutSeconds)"; idle_timeout="${idle_timeout:-1800}"
   poll="$(yaml_value pollSeconds)"; poll="${poll:-10}"
@@ -112,9 +114,9 @@ watch_delivery() {
   previous_signature=''
   while true; do
     payload="$(status)" || { printf '[WARN] El estado aún no está disponible; reintentando.\n' >&2; sleep "${poll}"; continue; }
-    phase="$(printf '%s\n' "${payload}" | sed -n 's/^[[:space:]]*"phase": "\([^"]*\)".*/\1/p' | head -n1)"
-    evidence="$(printf '%s\n' "${payload}" | sed -n 's/^[[:space:]]*"repairEvidence": "\([^"]*\)".*/\1/p' | head -n1)"
-    route="$(printf '%s\n' "${payload}" | sed -n 's/^[[:space:]]*"routeUrl": "\([^"]*\)".*/\1/p' | head -n1)"
+    phase="$(printf '%s\n' "${payload}" | jq -r '.phase // empty')"
+    evidence="$(printf '%s\n' "${payload}" | jq -r '.repairEvidence // empty')"
+    route="$(printf '%s\n' "${payload}" | jq -r '.routeUrl // empty')"
     signature="$(printf '%s' "${payload}" | jq -r '[.phase,.message,.updatedAt,.validationRunName,.buildRunName,.gitopsStatus] | @tsv' 2>/dev/null || printf '%s' "${phase}")"
     if [[ "${signature}" != "${previous_signature}" ]]; then
       last_progress="$(date +%s)"
@@ -123,6 +125,15 @@ watch_delivery() {
     printf '[SDD] Estado: %s\n' "${phase:-desconocido}"
     case "${phase}" in
       SUCCEEDED)
+        deployed_commit="$(printf '%s\n' "${payload}" | jq -r '.sourceCommitSha // empty')"
+        if [[ "${deployed_commit}" != "${expected_commit}" ]]; then
+          printf '[ERROR] Entrega obsoleta: esperado %s, desplegado %s. El orquestador debe iniciar la entrega vigente. Trazabilidad: %s\n' "${expected_commit}" "${deployed_commit:-desconocido}" "${trace}" >&2
+          return 21
+        fi
+        if [[ ! "${route}" =~ ^https://[^/[:space:]]+ ]]; then
+          printf '[ERROR] Éxito sin Route HTTPS verificable. Trazabilidad: %s\n' "${trace}" >&2
+          return 22
+        fi
         printf '[OK] Aplicación desplegada: %s\n' "${route}"
         printf '[INFO] Trazabilidad: %s\n' "${trace}"
         return 0 ;;

@@ -1,5 +1,21 @@
 # Evidencia de implementación — 002-account-experience
 
+## Revalidación y ampliación 2026-09-08
+
+Baseline de esta ampliación: `9187ac57ab538a3ec9052123b5a9e611848e4ce9`, árbol inicialmente limpio; conserva todas las correcciones de cuenta. No se modificó código de UI ni se reinicializaron bases existentes.
+
+- FR-016/017 PASS local: `node tools/test-event-catalog-seed.mjs`, PostgreSQL real con esquema aleatorio y ROLLBACK: 12 filas, seis categorías, fechas futuras, cupos positivos, preservación completa de evento previo y de modificaciones tras repetición.
+- Prisma `migrate deploy` aplicado exclusivamente a `account_experience_test` local; segunda ejecución «No pending migrations». Prisma Client confirma 12 eventos Demo, seis categorías y cupos íntegros. Esto NO acredita población de la base desplegada.
+- FR-018 PASS local: `node --test tools/test-sdd-delivery.mjs`, 5/5; SHA obsoleto/ausente, éxito vigente, Route inválida y códigos anteriores. Regresión previa falló con JSON compacto (timeout); se corrigieron parseo y validación de procedencia.
+- Frontend Vitest 44/44; Gateway E2E 38/38. Build frontend/event-service PASS; lint frontend 0 errores/7 warnings Fast Refresh previos, event-service sin warnings.
+- Playwright con los cuatro servicios y frontend de producción locales: `node tools/run-account-test-stack.mjs account-lifecycle.spec.ts account-recovery.spec.ts auth.spec.ts --workers=1`: 6/6 en 5 segundos. Login/registro/logout y cuenta→alta→detalle→cancelación conservan navegación; datos corruptos y sesión vencida se recuperan.
+- Imagen local event-service construida: `e140e9ba84f422b7e941c28831a2aead7bd3314d6733dd5761c2be09b92d44c0`, migración incorporada por Containerfile existente. npm ci informa 22 advisories preexistentes (4 low/11 moderate/7 high); no se cambiaron dependencias ni rebajaron controles de plataforma.
+- Kustomize dev + Conftest: 390 controles, 382 pass/8 warnings de imágenes que fijará plataforma/0 fallos. Constitución intacta, sin nueva topología ni Secret.
+- OBSERVED vía endpoint sanitizado del orquestador: continúa `SUCCEEDED` para `67605249bde9e06a954b62ec84e8e917310756f7`, solicitud `event-hub-mtroprgp`. Monitor corregido devuelve 21, no éxito para `9187ac5`. No hay capacidad Tool Broker de activación disponible entre las herramientas de esta sesión.
+- Entrega vigente, población remota, smoke remoto y handoff ADMIN: PENDING_VALIDATION. Producción: PLATFORM_INPUT_REQUIRED (destino/perfil aprobado ausentes; solo `event-hub-dev` configurado). Propietario del bloqueo: plataforma/orquestador. No modificar Secrets/SDDRequest ni desplegar directamente.
+
+Trazabilidad del bloqueo: https://sdd-orchestrator-sdd-ai-system.apps.cluster-gfllb.dyn.redhatworkshops.io/ui/components/event-hub
+
 Baseline: 50d46d2f3ec420d6e3e4b5c5baf86dfc7460cb18, main, 2026-09-07. Cambios previos: feature.json, AGENTS.md y documentos de esta feature; se conservan. Runtime local Node 22.22.2; imágenes backend Node 20 según contrato, a verificar en contenedor. Sin cambio de frameworks.
 
 ## Preparación

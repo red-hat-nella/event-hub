@@ -8,6 +8,14 @@
 
 **Input**: El usuario reporta “Unexpected Application Error! Cannot read properties of undefined (reading 'slice')” al abrir Mi cuenta y fallos similares en Mis inscripciones. Solicita corregir este tipo de problemas, crear un dashboard atractivo para las cuentas y disponer de un administrador base con entrega de sus credenciales.
 
+## Ampliación solicitada — 2026-09-08
+
+- FR-016: Poblar el catálogo con 12 eventos de ejemplo, identificados como «Demo», repartidos entre las seis categorías, con ubicación virtual de demostración, fechas futuras y cupos positivos. No afirmar que representan actividades reales ni crear inscripciones ficticias.
+- FR-017: La inicialización no debe duplicar eventos, sobrescribir ediciones, reponer cupos consumidos ni borrar datos existentes al repetirse o reiniciarse.
+- FR-018: La entrega solo puede anunciar éxito cuando la revisión desplegada corresponde al commit solicitado y tiene una Route HTTPS. Un éxito histórico no acredita la corrección.
+- A-007: Al no proporcionarse un catálogo real, se usan eventos sintéticos claramente identificados. La solicitud de producción requiere un destino/perfil aprobado; solo está configurado `event-hub-dev`, que no se presentará como producción.
+- Aceptación: 12 registros nuevos, seis categorías y cupos íntegros inicialmente; repetir la carga después de editar uno conserva todos los datos y mantiene el total; una entrega de otro SHA se rechaza como obsoleta.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consultar mi cuenta e inscripciones sin bloqueos (Priority: P1)

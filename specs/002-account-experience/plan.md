@@ -133,4 +133,12 @@ Paridad funcional local/dev: mismos DTO, reglas, seed; cambian TLS/puertos y ori
 
 ## Complexity Tracking
 
+## Delta 2026-09-08: catálogo y evidencia de entrega
+
+FR-016/017: migración de datos aditiva en event-service, sin cambio de esquema ni nuevo workload. Insertar 12 UUID deterministas con `ON CONFLICT (id) DO NOTHING`; fechas UTC calculadas una sola vez respecto a la ejecución (14–91 días). Nombre y descripción identifican Demo, sin imágenes remotas ni ubicaciones reales inventadas. El initContainer migrate existente aplica la migración versionada desde la misma imagen Prisma. No se reponen eventos eliminados ni cupos en reinicios: Prisma registra la ejecución. Rollback de imagen no elimina datos; eliminación posterior solo mediante administración autorizada.
+
+FR-018: `tools/sdd-deliver.sh watch` compara `sourceCommitSha` con HEAD fijado al comenzar; un SUCCEEDED distinto o sin SHA termina con código 21 y trazabilidad, nunca falso éxito. Un éxito de SHA vigente sin Route HTTPS termina con código 22. Usar jq para JSON compacto o indentado. No modificar controlador, Secrets ni estado GitOps de plataforma.
+
+Pruebas: SQL real en PostgreSQL local, esquema aleatorio transaccional con ROLLBACK, repetición y preservación de registros/cupos/fechas; regresiones de watch con funciones de estado simuladas sin red; suites frontend/Gateway y recorrido login→cuenta→inscripción. Entrega y población remotas quedan PENDING_VALIDATION hasta evidencia del commit nuevo. Producción: PLATFORM_INPUT_REQUIRED, propietario plataforma, falta perfil/destino/capacidad de promoción aprobados.
+
 Sin violaciones justificadas ni nueva infraestructura. tasks.md corresponde a la siguiente fase.

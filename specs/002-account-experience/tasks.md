@@ -117,6 +117,13 @@
 
 ## Entrega obligatoria después de implementar
 
+### Ampliación 2026-09-08
+
+- [X] T051 Añadir prueba SQL local aislada de carga, repetición y preservación en `tools/test-event-catalog-seed.mjs` (FR-016/017).
+- [X] T052 Implementar migración aditiva `backend/event-service/prisma/migrations/20260908090000_seed_demo_catalog/migration.sql` con 12 eventos Demo sin alterar esquema ni datos existentes (FR-016/017).
+- [X] T053 Añadir regresiones y corregir `tools/sdd-deliver.sh` para no aceptar éxito de SHA antiguo/ausente ni Route inválida (FR-018).
+- [X] T054 Ejecutar SQL, regresiones de cuenta y entrega y builds; actualizar evidencia y documentación para preflight/hook obligatorio. Población remota y promoción real se verifican post-hook, no quedan acreditadas por este checkbox.
+
 No es una fase opcional ni queda satisfecha al marcar T050. Los checkboxes anteriores representan trabajo de implementación/preparación; la aceptación desplegada se registra después del hook para no declarar resultados futuros ni crear una dependencia circular con preflight.
 
 Al terminar `speckit-implement`, usar la skill `sdd-deliver` y ejecutar el hook `sdd.deliver` obligatorio: validar, publicar y observar la entrega administrada en esta misma sesión. Seguir sus instrucciones vigentes; no desplegar con oc/kubectl, modificar plataforma ni pedir credenciales de clúster. Ante fallo, solo cambiar repositorio con evidencia de defecto propio; reintentos de infraestructura corresponden al orquestador.
