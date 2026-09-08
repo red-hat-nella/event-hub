@@ -33,6 +33,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: frontend-config
+          env:
+            - name: API_GATEWAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: frontend-config
+                  key: API_GATEWAY_UPSTREAM
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
