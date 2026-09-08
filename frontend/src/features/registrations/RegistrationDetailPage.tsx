@@ -10,7 +10,7 @@ import { Button, buttonClassNames } from "../../design-system/atoms/Button";
 import { ConfirmDialog } from "../../design-system/molecules/ConfirmDialog";
 import { EmptyState } from "../../design-system/molecules/EmptyState";
 
-const dateFormatter = new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeStyle: "short" });
+import { formatAccountDate, accountName, isFutureDate } from "../../design-system/account-formatters";
 
 const STATUS_BADGE: Record<RegistrationStatus, BadgeVariant> = {
   ACTIVE: "active",
@@ -75,7 +75,7 @@ export function RegistrationDetailPage() {
 
   const canCancel =
     registration.status === "ACTIVE" &&
-    new Date(registration.eventStartsAt).getTime() > Date.now();
+    isFutureDate(registration.eventStartsAt);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-10 sm:px-6">
@@ -88,30 +88,30 @@ export function RegistrationDetailPage() {
 
       <div className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-bg-surface p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="font-display text-2xl text-text-primary">{registration.eventName}</h1>
+          <h1 className="font-display text-2xl text-text-primary">{accountName(registration.eventName, "Evento no disponible")}</h1>
           <Badge variant={STATUS_BADGE[registration.status]}>{STATUS_LABEL[registration.status]}</Badge>
         </div>
 
         <div className="flex flex-col gap-1.5 text-text-secondary">
           <span className="flex items-center gap-2">
             <CalendarDays size={18} strokeWidth={1.5} aria-hidden="true" />
-            {dateFormatter.format(new Date(registration.eventStartsAt))}
+            {formatAccountDate(registration.eventStartsAt)}
           </span>
           <span className="flex items-center gap-2">
             <MapPin size={18} strokeWidth={1.5} aria-hidden="true" />
-            {registration.eventLocation}
+            {accountName(registration.eventLocation, "Ubicación no disponible")}
           </span>
         </div>
 
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-medium text-text-primary">Fecha de inscripción</dt>
-            <dd className="text-text-secondary">{dateFormatter.format(new Date(registration.createdAt))}</dd>
+            <dd className="text-text-secondary">{formatAccountDate(registration.createdAt)}</dd>
           </div>
           {registration.cancelledAt && (
             <div>
               <dt className="font-medium text-text-primary">Fecha de cancelación</dt>
-              <dd className="text-text-secondary">{dateFormatter.format(new Date(registration.cancelledAt))}</dd>
+              <dd className="text-text-secondary">{formatAccountDate(registration.cancelledAt)}</dd>
             </div>
           )}
         </dl>
@@ -141,7 +141,7 @@ export function RegistrationDetailPage() {
         description={
           <div className="flex flex-col gap-2">
             <span>
-              ¿Seguro que quieres cancelar tu inscripción a &ldquo;{registration.eventName}&rdquo;? Tu
+              ¿Seguro que quieres cancelar tu inscripción a &ldquo;{accountName(registration.eventName, "Evento no disponible")}&rdquo;? Tu
               cupo quedará disponible para otra persona.
             </span>
             {cancelRegistration.isError && (

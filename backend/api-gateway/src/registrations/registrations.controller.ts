@@ -1,5 +1,6 @@
 import {
   Controller,
+  BadRequestException,
   Delete,
   ForbiddenException,
   Get,
@@ -16,6 +17,11 @@ import {
   type AuthenticatedUser,
 } from '../auth/current-user.decorator';
 import { RegistrationsService } from './registrations.service';
+import {
+  presentRegistration,
+  presentRegistrationList,
+  invalidRegistrationResponse,
+} from './registration.presenter';
 
 /**
  * `contracts/api-gateway.md` § Inscripciones (sesión requerida). Se agrupan
@@ -29,20 +35,36 @@ export class RegistrationsController {
 
   @Post('api/events/:id/registrations')
   @HttpCode(201)
-  create(
+  async create(
     @Param('id') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    return this.registrationsService.create(user.id, eventId, idempotencyKey);
+    return presentRegistration(
+      await this.registrationsService.create(user.id, eventId, idempotencyKey),
+    );
   }
 
   @Get('api/registrations/me')
-  findMine(
+  async findMine(
     @CurrentUser() user: AuthenticatedUser,
     @Query('status') status?: string,
   ) {
-    return this.registrationsService.findMine(user.id, status);
+    if (status !== undefined && !['ACTIVE', 'CANCELLED'].includes(status)) {
+      throw new BadRequestException({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Estado de inscripción inválido.',
+        },
+      });
+    }
+    const records = await this.registrationsService.findMine(user.id, status);
+    if (
+      Array.isArray(records) &&
+      records.some((record) => record && record.userId !== user.id)
+    )
+      return invalidRegistrationResponse();
+    return presentRegistrationList(records);
   }
 
   @Get('api/registrations/:id')
@@ -51,6 +73,8 @@ export class RegistrationsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const registration = await this.registrationsService.findOne(id);
+    if (!registration || typeof registration.userId !== 'string')
+      return invalidRegistrationResponse();
     if (user.role !== 'ADMIN' && registration.userId !== user.id) {
       throw new ForbiddenException({
         error: {
@@ -59,11 +83,17 @@ export class RegistrationsController {
         },
       });
     }
-    return registration;
+    return presentRegistration(registration);
   }
 
   @Delete('api/registrations/:id')
-  cancel(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.registrationsService.cancel(id, user.id);
+  async cancel(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    // El servicio interno autoriza al titular antes de cancelar y liberar cupo.
+    const registration = await this.registrationsService.cancel(id, user.id);
+    if (registration?.userId !== user.id) return invalidRegistrationResponse();
+    return presentRegistration(registration);
   }
 }

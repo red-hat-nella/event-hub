@@ -1,10 +1,11 @@
 export interface AvatarProps {
-  name: string;
+  name: string | null | undefined;
   size?: number;
   className?: string;
 }
 
-function initialsOf(name: string): string {
+function initialsOf(name: string | null | undefined): string {
+  if (typeof name !== 'string') return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
@@ -16,8 +17,8 @@ export function Avatar({ name, size = 36, className = "" }: AvatarProps) {
   return (
     <span
       role="img"
-      aria-label={name}
-      className={`inline-flex items-center justify-center rounded-pill bg-accent-clay text-text-inverse font-display font-medium ${className}`}
+      aria-label={name || 'Tu cuenta'}
+      className={`inline-flex shrink-0 items-center justify-center rounded-pill bg-secondary-olive-hover text-text-inverse font-display font-medium ${className}`}
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {initialsOf(name)}

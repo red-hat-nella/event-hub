@@ -11,14 +11,16 @@ export default defineConfig({
   retries: 0,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:5173",
-    trace: "on-first-retry",
+    baseURL: process.env.BASE_URL || "http://localhost:5173",
+    trace: "off",
+    screenshot: "off",
+    video: "off",
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
-  webServer: {
-    command: "npm run dev",
+  webServer: process.env.BASE_URL ? undefined : {
+    command: process.env.ACCOUNT_PRODUCTION_TEST ? "npm run preview -- --port 5173" : "npm run dev",
     url: "http://localhost:5173",
     reuseExistingServer: true,
   },

@@ -1,5 +1,5 @@
 # Valores no sensibles de user-service (plan.md §10). Host/puerto/nombre de
-# su propia base (db-users) y datos del seed admin no sensibles.
+# su propia base (db-users). La identidad seed proviene de referencia privada.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,5 +11,4 @@ data:
   DB_HOST: "db-users"
   DB_PORT: "5432"
   DB_NAME: "users"
-  SEED_ADMIN_EMAIL: "admin@event-hub.local"
   LOG_LEVEL: "info"

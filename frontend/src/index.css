@@ -26,9 +26,13 @@
 
   /* Foco de teclado visible en todos los controles interactivos (NFR-019) */
   :focus-visible {
-    outline: 2px solid theme("colors.focus-ring");
+    outline: 3px solid theme("colors.focus-ring");
     outline-offset: 2px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 @layer utilities {

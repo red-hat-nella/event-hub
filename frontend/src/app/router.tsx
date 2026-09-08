@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { RootLayout } from "./RootLayout";
+import { RouteErrorBoundary } from './RouteErrorBoundary';
 import { ProtectedRoute, AdminRoute } from "./route-guards";
 import { PlaceholderPage } from "./placeholders";
 import { HomePage } from "../features/events/HomePage";
@@ -27,7 +28,9 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
+      { errorElement: <RouteErrorBoundary />, children: [
       { index: true, element: <HomePage /> },
       { path: "eventos", element: <CatalogPage /> },
       { path: "eventos/:id", element: <EventDetailPage /> },
@@ -125,6 +128,7 @@ export const router = createBrowserRouter([
           />
         ),
       },
+      ] },
     ],
   },
 ]);

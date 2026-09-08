@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./auth-context";
 import { Spinner } from "../design-system/atoms";
+import { QueryErrorState } from '../design-system/molecules/QueryErrorState';
 
 /** Pantalla de espera mientras se resuelve `GET /api/auth/me`. */
 function AuthResolving() {
@@ -17,10 +18,11 @@ function AuthResolving() {
  * para conservar la intención original (ux-design.md §13/route research).
  */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { status } = useAuth();
+  const { status, retrySession } = useAuth();
   const location = useLocation();
 
   if (status === "loading") return <AuthResolving />;
+  if (status === 'error') return <QueryErrorState onRetry={retrySession} />;
 
   if (status === "anonymous") {
     const from = encodeURIComponent(location.pathname + location.search);
@@ -32,10 +34,11 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
 /** Exige sesión activa y rol `ADMIN`. */
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { status, isAdmin } = useAuth();
+  const { status, isAdmin, retrySession } = useAuth();
   const location = useLocation();
 
   if (status === "loading") return <AuthResolving />;
+  if (status === 'error') return <QueryErrorState onRetry={retrySession} />;
 
   if (status === "anonymous") {
     const from = encodeURIComponent(location.pathname + location.search);

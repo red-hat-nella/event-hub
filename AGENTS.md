@@ -36,3 +36,14 @@ RBAC, disponibilidad de operadores, Argo CD, Tekton o conectividad interna: son
 responsabilidad de la plataforma y el orquestador las reintenta. Solo modifique
 el repositorio cuando la evidencia identifique de forma explícita un defecto en
 su código, pruebas, Containerfile, contrato de workloads o manifiestos.
+
+<!-- SPECKIT START -->
+## Contexto de planificación: 002-account-experience
+
+- Feature activa: `specs/002-account-experience`; leer plan, research, contratos y ux-design antes de implementar.
+- Conservar React 18/Vite, NestJS 10/Node 20, Prisma 5 y PostgreSQL 16 por workload; sin nuevas tablas ni servicios.
+- Gateway debe proyectar snapshots de inscripción y devolver listado `{items}`; datos esenciales inválidos son error, nunca lista vacía.
+- Dashboard usa todas las inscripciones propias; consultas privadas se aíslan por usuario y generación de sesión.
+- Seed ADMIN compilado dentro de user-service, initContainer después de migración, referencias privadas existentes; no elevar USER ni sobrescribir contraseñas.
+- Verificar contratos con fixtures internos reales, integración de cuenta, capturas responsive y handoff privado antes de declarar terminado.
+<!-- SPECKIT END -->

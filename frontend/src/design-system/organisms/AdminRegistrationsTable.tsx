@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<AdminRegistration["status"], string> = {
   CANCELLED: "Cancelada",
 };
 
-const dateFormatter = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" });
+import { formatAccountDate, accountName } from "../account-formatters";
 
 /**
  * Tabla de inscritos de un evento (US6, T116): usuario, correo, estado y
@@ -50,19 +50,19 @@ export function AdminRegistrationsTable({ registrations, className = "" }: Admin
         <tbody>
           {registrations.map((registration) => (
             <tr key={registration.registrationId} className="border-t border-border-subtle">
-              <td className="px-4 py-3 text-text-primary">{registration.userName}</td>
-              <td className="px-4 py-3 text-text-secondary">{registration.userEmail}</td>
+              <td className="px-4 py-3 text-text-primary">{accountName(registration.userName, "Nombre no disponible")}</td>
+              <td className="px-4 py-3 text-text-secondary">{accountName(registration.userEmail, "Correo no disponible")}</td>
               <td className="px-4 py-3">
                 <Badge variant={STATUS_BADGE[registration.status]}>
                   {STATUS_LABEL[registration.status]}
                 </Badge>
               </td>
               <td className="px-4 py-3 text-text-secondary">
-                {dateFormatter.format(new Date(registration.createdAt))}
+                {formatAccountDate(registration.createdAt)}
               </td>
               <td className="px-4 py-3 text-text-secondary">
                 {registration.cancelledAt
-                  ? dateFormatter.format(new Date(registration.cancelledAt))
+                  ? formatAccountDate(registration.cancelledAt)
                   : "—"}
               </td>
             </tr>

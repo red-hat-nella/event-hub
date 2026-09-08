@@ -1,9 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const ADMIN_EMAIL = "admin@event-hub.local";
-const ADMIN_PASSWORD = "changeme-admin-password";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
 
 async function loginAsAdmin(page: Page) {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) throw new Error("Private administrator fixture configuration required");
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(ADMIN_EMAIL);
   await page.getByLabel("Contraseña", { exact: true }).fill(ADMIN_PASSWORD);
@@ -40,6 +41,7 @@ test.describe("Consultar inscripciones de un evento (admin)", () => {
     await page.getByLabel("Capacidad máxima").fill("5");
     await page.getByRole("button", { name: /crear evento/i }).click();
     await expect(page).toHaveURL(/\/admin\/eventos\/[^/]+$/);
+    await expect(page.getByRole('heading', { name: eventName, exact: true })).toBeVisible();
     const eventId = page.url().split("/").filter(Boolean).pop();
 
     // Sin inscritos todavía: el vacío editorial de US6 debe aparecer.

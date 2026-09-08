@@ -10,6 +10,14 @@ import type {
   UpdateEventDto,
 } from "../../services/api-client";
 import { useToast } from "../../design-system/molecules/Toast";
+import { useAuth } from '../../app/auth-context';
+import { privateQueryKey } from '../../app/private-query-keys';
+async function currentSessionResult<T>(operation: () => Promise<T>): Promise<T> {
+  const generation = api.getSessionGeneration();
+  const result = await operation();
+  if (generation !== api.getSessionGeneration()) throw new DOMException('Sesión reemplazada', 'AbortError');
+  return result;
+}
 
 /**
  * Mutaciones/consultas administrativas de eventos (US5/US6). Igual que
@@ -22,7 +30,7 @@ export function useCreateEvent() {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (dto: CreateEventDto) => api.createEvent(dto),
+    mutationFn: (dto: CreateEventDto) => currentSessionResult(() => api.createEvent(dto)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       showToast("Evento creado.", "success");
@@ -35,7 +43,7 @@ export function useUpdateEvent(id: string) {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (dto: UpdateEventDto) => api.updateEvent(id, dto),
+    mutationFn: (dto: UpdateEventDto) => currentSessionResult(() => api.updateEvent(id, dto)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       showToast("Evento actualizado.", "success");
@@ -48,7 +56,7 @@ export function useDeleteEvent() {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => api.deleteEvent(id),
+    mutationFn: (id: string) => currentSessionResult(() => api.deleteEvent(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       showToast("Evento eliminado.", "success");
@@ -57,10 +65,12 @@ export function useDeleteEvent() {
 }
 
 export function useEventRegistrations(id: string | undefined, status?: RegistrationStatus) {
+  const auth = useAuth();
   return useQuery({
-    queryKey: ["events", "registrations", id, status],
-    queryFn: () => api.getEventRegistrations(id as string, status),
-    enabled: Boolean(id),
+    queryKey: privateQueryKey(auth.user?.id, auth.generation, 'admin-registrations', id, status),
+    queryFn: ({ signal }) => api.getEventRegistrations(id as string, status, signal),
+    enabled: auth.status === 'authenticated' && auth.isAdmin && Boolean(id),
+    retry: false,
   });
 }
 
@@ -82,11 +92,14 @@ export function useDeleteEventDialog() {
   const deleteEvent = useDeleteEvent();
 
   async function request(event: EventSummary | EventDetail) {
+    const generation = api.getSessionGeneration();
     setTarget({ event });
     try {
       const registrations = await api.getEventRegistrations(event.id, "ACTIVE");
+      if (generation !== api.getSessionGeneration()) return;
       setTarget({ event, activeRegistrations: registrations.items.length });
     } catch (error) {
+      if (generation !== api.getSessionGeneration()) return;
       setTarget({
         event,
         loadError:

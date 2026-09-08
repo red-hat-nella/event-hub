@@ -11,6 +11,17 @@
  *   pantalla capturan `ApiError` para mostrar mensajes de campo o banners.
  */
 
+import { z } from 'zod';
+import { registrationSchema, registrationListSchema, currentUserSchema, adminRegistrationsSchema } from './account-schemas';
+import { eventDetailSchema, eventsPageSchema } from './event-schemas';
+let sessionGeneration = 0;
+const unauthorizedListeners = new Set<(generation: number) => void>();
+export const getSessionGeneration = () => sessionGeneration;
+export const advanceSession = () => ++sessionGeneration;
+export function onPrivateUnauthorized(listener: (generation: number) => void) {
+  unauthorizedListeners.add(listener);
+  return () => { unauthorizedListeners.delete(listener); };
+}
 export type ErrorCode =
   | "VALIDATION_ERROR"
   | "UNAUTHENTICATED"
@@ -63,7 +74,16 @@ export const ERROR_MESSAGES: Record<string, string> = {
 async function request<T>(
   path: string,
   init: RequestInit = {},
+  schema?: z.ZodType<T, z.ZodTypeDef, unknown>,
 ): Promise<T> {
+  const generation = sessionGeneration;
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  let timedOut = false;
+  if (init.signal?.aborted) controller.abort();
+  init.signal?.addEventListener('abort', abort, { once: true });
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 8000);
+  try {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -71,6 +91,7 @@ async function request<T>(
 
   const response = await fetch(`/api${path}`, {
     ...init,
+    signal: controller.signal,
     headers,
     credentials: "same-origin",
   });
@@ -80,17 +101,31 @@ async function request<T>(
   }
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : undefined;
+  let data: any;
+  try { data = text ? JSON.parse(text) : undefined; }
+  catch { if (response.ok) throw new ApiError(0, 'INVALID_RESPONSE', 'La información recibida no es válida. Intenta nuevamente.'); }
+  if (response.status === 401 && !path.startsWith('/auth/')) unauthorizedListeners.forEach(listener => listener(generation));
 
   if (!response.ok) {
     const errBody = data?.error ?? {};
     const code: ErrorCode = errBody.code ?? "UNKNOWN_ERROR";
-    const message: string =
-      errBody.message ?? ERROR_MESSAGES[code] ?? "Ocurrió un error inesperado.";
+    const message: string = ERROR_MESSAGES[code] ?? "No pudimos completar la solicitud. Intenta nuevamente.";
     throw new ApiError(response.status, code, message, errBody.fields ?? {});
   }
 
+  if (schema) {
+    const parsed = schema.safeParse(data);
+    if (!parsed.success) throw new ApiError(0, 'INVALID_RESPONSE', 'La información recibida no es válida. Intenta nuevamente.');
+    return parsed.data;
+  }
   return data as T;
+  } catch (error) {
+    if (timedOut) throw new ApiError(0, 'REQUEST_TIMEOUT', 'La solicitud tardó demasiado. Intenta nuevamente.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    init.signal?.removeEventListener('abort', abort);
+  }
 }
 
 function toQueryString(params: object | undefined): string {
@@ -164,9 +199,9 @@ export type RegistrationStatus = "ACTIVE" | "CANCELLED";
 export interface RegistrationSummary {
   id: string;
   eventId: string;
-  eventName: string;
-  eventStartsAt: string;
-  eventLocation: string;
+  eventName: string | null;
+  eventStartsAt: string | null;
+  eventLocation: string | null;
   status: RegistrationStatus;
   createdAt: string;
 }
@@ -178,8 +213,8 @@ export interface RegistrationDetail extends RegistrationSummary {
 export interface AdminRegistration {
   registrationId: string;
   userId: string;
-  userName: string;
-  userEmail: string;
+  userName: string | null;
+  userEmail: string | null;
   status: RegistrationStatus;
   createdAt: string;
   cancelledAt: string | null;
@@ -194,7 +229,7 @@ export interface AdminRegistrationsResponse {
 
 export interface CurrentUser {
   id: string;
-  name: string;
+  name: string | null;
   email: string;
   role: Role;
 }
@@ -225,15 +260,15 @@ export function login(dto: LoginDto): Promise<CurrentUser> {
   return request<CurrentUser>("/auth/login", {
     method: "POST",
     body: JSON.stringify(dto),
-  });
+  }, currentUserSchema);
 }
 
 export function logout(): Promise<void> {
   return request<void>("/auth/logout", { method: "POST" });
 }
 
-export function me(): Promise<CurrentUser> {
-  return request<CurrentUser>("/auth/me", { method: "GET" });
+export function me(signal?: AbortSignal): Promise<CurrentUser> {
+  return request<CurrentUser>("/auth/me", { method: "GET", signal }, currentUserSchema);
 }
 
 // ---------------------------------------------------------------------------
@@ -243,18 +278,18 @@ export function me(): Promise<CurrentUser> {
 export function getEvents(
   params?: GetEventsParams,
 ): Promise<Paginated<EventSummary>> {
-  return request<Paginated<EventSummary>>(`/events${toQueryString(params)}`);
+  return request<Paginated<EventSummary>>(`/events${toQueryString(params)}`, {}, eventsPageSchema);
 }
 
 export function getEvent(id: string): Promise<EventDetail> {
-  return request<EventDetail>(`/events/${id}`);
+  return request<EventDetail>(`/events/${id}`, {}, eventDetailSchema);
 }
 
 export function createEvent(dto: CreateEventDto): Promise<EventDetail> {
   return request<EventDetail>("/events", {
     method: "POST",
     body: JSON.stringify(dto),
-  });
+  }, eventDetailSchema);
 }
 
 export function updateEvent(
@@ -264,7 +299,7 @@ export function updateEvent(
   return request<EventDetail>(`/events/${id}`, {
     method: "PUT",
     body: JSON.stringify(dto),
-  });
+  }, eventDetailSchema);
 }
 
 export function deleteEvent(id: string): Promise<void> {
@@ -274,9 +309,10 @@ export function deleteEvent(id: string): Promise<void> {
 export function getEventRegistrations(
   id: string,
   status?: RegistrationStatus,
+  signal?: AbortSignal,
 ): Promise<AdminRegistrationsResponse> {
   return request<AdminRegistrationsResponse>(
-    `/events/${id}/registrations${toQueryString({ status })}`,
+    `/events/${id}/registrations${toQueryString({ status })}`, { signal }, adminRegistrationsSchema,
   );
 }
 
@@ -291,23 +327,24 @@ export function createRegistration(
   return request<RegistrationDetail>(`/events/${eventId}/registrations`, {
     method: "POST",
     headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
-  });
+  }, registrationSchema);
 }
 
 export function getMyRegistrations(
   status?: RegistrationStatus,
+  signal?: AbortSignal,
 ): Promise<{ items: RegistrationSummary[] }> {
   return request<{ items: RegistrationSummary[] }>(
-    `/registrations/me${toQueryString({ status })}`,
+    `/registrations/me${toQueryString({ status })}`, { signal }, registrationListSchema,
   );
 }
 
-export function getRegistration(id: string): Promise<RegistrationDetail> {
-  return request<RegistrationDetail>(`/registrations/${id}`);
+export function getRegistration(id: string, signal?: AbortSignal): Promise<RegistrationDetail> {
+  return request<RegistrationDetail>(`/registrations/${id}`, { signal }, registrationSchema);
 }
 
 export function cancelRegistration(id: string): Promise<RegistrationDetail> {
   return request<RegistrationDetail>(`/registrations/${id}`, {
     method: "DELETE",
-  });
+  }, registrationSchema);
 }

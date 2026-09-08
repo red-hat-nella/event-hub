@@ -20,6 +20,7 @@ interface ToastItem {
 interface ToastContextValue {
   /** Encola un toast; se auto-descarta a los 5s. */
   showToast: (message: string, variant?: ToastVariant) => void;
+  clearToasts: () => void;
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
@@ -55,7 +56,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [dismiss],
   );
 
-  const value = useMemo(() => ({ showToast }), [showToast]);
+  const clearToasts = useCallback(() => setToasts([]), []);
+  const value = useMemo(() => ({ showToast, clearToasts }), [showToast, clearToasts]);
 
   return (
     <ToastContext.Provider value={value}>

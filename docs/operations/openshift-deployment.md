@@ -74,17 +74,62 @@ vía `podman`, sin mocks de base de datos):
   verde, 8 advertencias esperadas de "imagen aún no fijada por digest",
   responsabilidad del orquestador en `publish`).
 
-**Limitación conocida de este entorno de desarrollo:** el sandbox de este
-agente no permite mantener procesos de servidor en segundo plano entre
-comandos (cada proceso en segundo plano es terminado por el supervisor del
-entorno al finalizar el comando que lo originó), por lo que el *smoke
-test* multi-servicio de `quickstart.md §6` (los 5 servicios corriendo
-simultáneamente y consultados vía `curl`) no pudo ejecutarse de punta a
-punta en este entorno, aunque cada servicio se validó de forma aislada y
-exhaustiva contra su propia base de datos real como se detalla arriba.
-Ese *smoke test* multi-servicio es exactamente lo que el pipeline de
-`sdd-deliver`/OpenShift Pipelines ejecuta en la etapa `verify` contra el
-clúster real, con evidencia `OBSERVED` que reemplazará esta nota.
+Actualización 002-account-experience: `tools/run-account-test-stack.mjs`
+mantiene los cuatro servicios y el navegador dentro de un proceso supervisor
+local. El recorrido integrado real ya se verificó con PostgreSQL y Chromium;
+la limitación anterior de procesos separados queda resuelta para pruebas locales.
+Esta evidencia no sustituye la verificación del ambiente desplegado.
+
+## Cuenta y administrador inicial — 002-account-experience
+
+La evidencia detallada y fechada reside en
+`specs/002-account-experience/verification.md` y `performance-results.md`.
+Gateway devuelve `{items}` y proyecta snapshots a DTO público; frontend
+valida contratos y separa caché por identidad/generación. No hay tablas nuevas.
+
+`user-service` ejecuta dos initContainers en orden: migrate y seed-admin.
+El segundo usa `node dist/bootstrap/seed-admin.js`, la misma imagen que el
+servicio y la conexión a db-users; recibe únicamente referencias privadas
+`user-service-seed-admin/email` y `user-service-seed-admin/password`.
+No se mantienen credenciales de seed en el contenedor HTTP ni ConfigMap.
+Localmente ejecutar build antes de db:seed; migrate deploy no ejecuta seed.
+
+Resultados seguros de inicialización:
+
+- ADMIN_CREATED / ADMIN_REUSED: éxito, sin email/hash/password en logs.
+- ADMIN_IDENTITY_CONFLICT: correo pertenece a USER; no se modifica su rol.
+- ADMIN_ACCESS_NOT_VERIFIED: ADMIN existente no autentica con la configuración;
+  no se modifica contraseña/perfil. Recuperación solo por capacidad autorizada.
+- ADMIN_CONFIGURATION_REQUIRED: entradas ausentes o inválidas; no hay fallback.
+- ADMIN_BOOTSTRAP_FAILED: error operativo genérico; diagnóstico mediante canal
+  autorizado, sin volcar objetos que contengan credenciales.
+
+La semántica de email conserva la coincidencia exacta del login existente.
+Concurrencia resuelve P2002 releyendo y verificando ganador; no hace upsert
+que sustituya rol/hash. Reinicio y rollback de imágenes/configuración no borran
+el ADMIN creado, cuentas, eventos ni inscripciones. No hay migración inversa.
+Retención/backups vigentes no cambian; nunca limpiar bases existentes para reparar.
+
+### Entrega, smoke y acceso privado
+
+Hook `sdd.deliver`: preflight → publish → watch; Pipelines construye las imágenes
+y GitOps reconcilia. No despliegue directo, nuevos operadores ni recursos de CI
+en este repositorio. Preservar sondas internas, OpenSSL y upstream frontend:3000.
+
+Tras reconciliación, el broker/orquestador autorizado debe ejecutar smoke con
+fixtures identificadas: login de cuenta nueva, alta a evento futuro, dashboard,
+lista/detalle, cancelación/cupo y login/operación ADMIN. El runner local no se
+usa contra el clúster; Playwright acepta BASE_URL solo para el smoke autorizado.
+Limpiar exclusivamente fixtures creadas para la prueba; no capturar campos de
+contraseña, cookies, Secrets ni estados de autenticación en artefactos públicos.
+
+El destinatario debe recibir URL de login e identidad/credencial mediante canal
+privado aprobado o mecanismo privado autorizado de un solo uso. La disponibilidad
+real de esa capacidad es PENDING_VALIDATION; watch no promete entregar passwords.
+Una Route saludable o un seed exitoso no acredita FR-014. Registrar fecha,
+identificador no sensible de evidencia y confirmación de entrega, nunca valores.
+Si no está disponible el canal, registrar bloqueo y propietario de capacidad;
+no crear enlaces ficticios ni elevar/resetear cuentas para ocultar el problema.
 
 ## Próximos datos `OBSERVED`
 

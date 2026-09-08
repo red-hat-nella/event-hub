@@ -34,13 +34,15 @@ function SummaryCard({ icon, label, value }: SummaryCardProps) {
  * la página actual de `GET /api/events` con un `pageSize` alto.
  */
 export function AdminDashboardPage() {
-  const { data, isLoading, isError, refetch } = useEvents({
+  const { data, isLoading, isError: queryError, refetch } = useEvents({
     page: 1,
     pageSize: ADMIN_PAGE_SIZE,
     sort: "startsAt",
   });
 
-  const items = data?.items ?? [];
+  const validData = data && Array.isArray(data.items) && data.items.every(event => event && typeof event.id === 'string' && typeof event.startsAt === 'string' && Number.isFinite(Date.parse(event.startsAt)) && Number.isFinite(event.maxCapacity) && Number.isFinite(event.availableSlots));
+  const isError = queryError || (!isLoading && !validData);
+  const items = validData ? data.items : [];
   const now = Date.now();
   const upcomingWithin7Days = items.filter((event) => {
     const startsAt = new Date(event.startsAt).getTime();

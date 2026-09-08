@@ -36,7 +36,7 @@ export function EventRegistrationsPage() {
         <h1 className="font-display text-3xl text-text-primary">
           Inscripciones{event ? ` — ${event.name}` : ""}
         </h1>
-        {data && (
+        {data && !isError && (
           <p className="mt-2 text-lg font-medium text-text-primary">
             {data.occupied} ocupados / {data.available} disponibles de {data.capacity}
           </p>

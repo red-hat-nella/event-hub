@@ -1,0 +1,42 @@
+import { test, expect } from '@playwright/test';
+import { randomBytes } from 'node:crypto';
+test('real account → registration → detail → cancellation → updated activity', async ({ page, playwright, baseURL }) => {
+  test.skip(!process.env.SEED_ADMIN_EMAIL || !process.env.SEED_ADMIN_PASSWORD, 'Requires private fixture access from local runner or authorized broker');
+  const admin = await playwright.request.newContext({ baseURL });
+  expect((await admin.post('/api/auth/login', { data: { email: process.env.SEED_ADMIN_EMAIL, password: process.env.SEED_ADMIN_PASSWORD } })).ok()).toBeTruthy();
+  const name = `Account acceptance ${Date.now()}`;
+  const created = await admin.post('/api/events', { data: { name, description: 'Fixture sintética de aceptación de cuenta.', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), location: 'Sala de pruebas', maxCapacity: 10 } });
+  expect(created.status()).toBe(201);
+  const event = await created.json();
+  try {
+    const password = randomBytes(18).toString('base64url');
+    const email = `account-${Date.now()}@${process.env.ACCOUNT_TEST_DOMAIN || 'example.test'}`;
+    expect((await page.request.post('/api/auth/register', { data: { name: 'Cuenta de prueba', email, password } })).ok()).toBeTruthy();
+    expect((await page.request.post('/api/auth/login', { data: { email, password } })).ok()).toBeTruthy();
+    await page.goto('/mi-cuenta');
+    await expect(page.getByText('Unexpected Application Error!')).toHaveCount(0);
+    const response = await page.request.post(`/api/events/${event.id}/registrations`, { headers: { 'Idempotency-Key': randomBytes(16).toString('hex') } });
+    expect(response.status()).toBe(201);
+    const registration = await response.json();
+    expect(registration.eventName).toBe(name);
+    expect(registration.userId).toBeUndefined();
+    await page.goto('/mi-cuenta/inscripciones');
+    await page.getByRole('link', { name, exact: true }).click();
+    await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Cancelar inscripción', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Cancelar inscripción' }).click();
+    await expect(page.getByText('Esta inscripción fue cancelada.')).toBeVisible();
+    await page.goto('/mi-cuenta');
+    await expect(page.getByText('1', { exact: true })).toBeVisible();
+    await expect(page.getByText('0', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Ver inscripción', exact: true })).toHaveCount(0);
+    await page.goto('/mi-cuenta/inscripciones?status=CANCELLED');
+    await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
+    const list = await (await page.request.get('/api/registrations/me')).json();
+    expect(list.items).toHaveLength(1);
+    expect(list.items[0].status).toBe('CANCELLED');
+    const current = await (await admin.get(`/api/events/${event.id}`)).json();
+    expect(current.availableSlots).toBe(10);
+    expect((await page.request.post('/api/events', { data: {} })).status()).toBe(403);
+  } finally { await admin.delete(`/api/events/${event.id}`); await admin.dispose(); }
+});

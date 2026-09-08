@@ -7,8 +7,8 @@ import { Spinner } from "../atoms/Spinner";
 import { buttonClassNames } from "../atoms/Button";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `text-sm font-medium transition-colors duration-150 ease-out hover:text-accent-terracotta ${
-    isActive ? "text-accent-terracotta" : "text-text-primary"
+  `inline-flex min-h-11 items-center text-sm font-medium transition-colors duration-150 ease-out hover:text-accent-terracotta-hover ${
+    isActive ? "text-accent-terracotta-hover" : "text-text-primary"
   }`;
 
 /**
@@ -53,8 +53,8 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border-subtle bg-bg-canvas/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="font-display text-xl text-text-primary">
+        <div className="flex min-w-0 items-center gap-4 sm:gap-8">
+          <Link to="/" className="inline-flex min-h-11 shrink-0 items-center font-display text-xl text-text-primary">
             Event Hub
           </Link>
           <nav
@@ -88,10 +88,11 @@ export function AppHeader() {
                 onClick={() => setMenuOpen((open) => !open)}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-bg-surface-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                aria-label={`Abrir menú de cuenta de ${user.name || 'Tu cuenta'}`}
+                className="flex min-h-11 items-center gap-2 rounded-md px-2 py-1.5 hover:bg-bg-surface-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
               >
                 <Avatar name={user.name} size={32} />
-                <span className="hidden text-sm font-medium text-text-primary sm:inline">
+                <span className="hidden max-w-48 truncate text-sm font-medium text-text-primary sm:inline lg:max-w-sm">
                   {user.name}
                 </span>
                 <ChevronDown size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -106,7 +107,7 @@ export function AppHeader() {
                   <Link
                     role="menuitem"
                     to="/mi-cuenta"
-                    className="block px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-alt"
+                    className="flex min-h-11 items-center px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-alt"
                     onClick={() => setMenuOpen(false)}
                   >
                     Mi cuenta
@@ -114,7 +115,7 @@ export function AppHeader() {
                   <Link
                     role="menuitem"
                     to="/mi-cuenta/inscripciones"
-                    className="block px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-alt"
+                    className="flex min-h-11 items-center px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-alt"
                     onClick={() => setMenuOpen(false)}
                   >
                     Mis inscripciones
@@ -123,7 +124,7 @@ export function AppHeader() {
                     <Link
                       role="menuitem"
                       to="/admin"
-                      className="block px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-alt"
+                      className="flex min-h-11 items-center px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-alt"
                       onClick={() => setMenuOpen(false)}
                     >
                       Panel de administración
@@ -133,7 +134,7 @@ export function AppHeader() {
                     role="menuitem"
                     type="button"
                     onClick={handleLogout}
-                    className="block w-full px-4 py-2 text-left text-sm text-error hover:bg-bg-surface-alt"
+                    className="flex min-h-11 w-full items-center px-4 py-2 text-left text-sm text-error hover:bg-bg-surface-alt"
                   >
                     Cerrar sesión
                   </button>
@@ -144,7 +145,7 @@ export function AppHeader() {
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md sm:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md sm:hidden"
             aria-label={mobileNavOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={mobileNavOpen}
             onClick={() => setMobileNavOpen((open) => !open)}

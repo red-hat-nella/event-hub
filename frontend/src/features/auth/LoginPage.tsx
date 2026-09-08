@@ -3,6 +3,7 @@ import { AuthForm } from "./AuthForm";
 import type { AuthFormValues } from "./AuthForm";
 import { useAuth } from "../../app/auth-context";
 import { useToast } from "../../design-system/molecules/Toast";
+import { safeReturnPath } from '../../app/safe-return-path';
 
 /** `/login`: respeta `?from=` para regresar al flujo interrumpido (p. ej. detalle de evento). */
 export function LoginPage() {
@@ -16,7 +17,7 @@ export function LoginPage() {
   async function handleSubmit(values: AuthFormValues) {
     const user = await login({ email: values.email, password: values.password });
     showToast(`Bienvenido, ${user.name}`, "success");
-    navigate(from ? decodeURIComponent(from) : "/mi-cuenta", { replace: true });
+    navigate(safeReturnPath(from), { replace: true });
   }
 
   return (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { AlertTriangle, CalendarDays, MapPin } from "lucide-react";
 import { useCancelRegistration, useMyRegistrations } from "./hooks";
 import { ApiError } from "../../services/api-client";
@@ -11,7 +11,7 @@ import { ConfirmDialog } from "../../design-system/molecules/ConfirmDialog";
 import { EmptyState } from "../../design-system/molecules/EmptyState";
 import { SkeletonRow } from "../../design-system/molecules/SkeletonRow";
 
-const dateFormatter = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" });
+import { formatAccountDate, accountName, isFutureDate } from "../../design-system/account-formatters";
 
 const STATUS_BADGE: Record<RegistrationStatus, BadgeVariant> = {
   ACTIVE: "active",
@@ -24,7 +24,7 @@ const STATUS_LABEL: Record<RegistrationStatus, string> = {
 };
 
 function eventAlreadyStarted(registration: RegistrationSummary): boolean {
-  return new Date(registration.eventStartsAt).getTime() <= Date.now();
+  return !isFutureDate(registration.eventStartsAt);
 }
 
 /**
@@ -34,7 +34,9 @@ function eventAlreadyStarted(registration: RegistrationSummary): boolean {
  * completa (FR-017).
  */
 export function MyRegistrationsPage() {
-  const [filter, setFilter] = useState<RegistrationStatus>("ACTIVE");
+  const [params, setParams] = useSearchParams();
+  const filter: RegistrationStatus = params.get("status") === "CANCELLED" ? "CANCELLED" : "ACTIVE";
+  const setFilter = (status: RegistrationStatus) => setParams({ status });
   const [cancelTarget, setCancelTarget] = useState<RegistrationSummary | undefined>(undefined);
   const { data, isLoading, isError, refetch } = useMyRegistrations(filter);
   const cancelRegistration = useCancelRegistration(cancelTarget?.id);
@@ -45,6 +47,7 @@ export function MyRegistrationsPage() {
   }
 
   function confirmCancel() {
+    if (cancelRegistration.isPending) return;
     cancelRegistration.mutate(undefined, {
       onSuccess: () => setCancelTarget(undefined),
     });
@@ -127,15 +130,15 @@ export function MyRegistrationsPage() {
                   to={`/mi-cuenta/inscripciones/${registration.id}`}
                   className="font-display text-lg text-text-primary hover:text-accent-terracotta"
                 >
-                  {registration.eventName}
+                  {accountName(registration.eventName, "Evento no disponible")}
                 </Link>
                 <span className="flex items-center gap-1.5 text-sm text-text-secondary">
                   <CalendarDays size={16} strokeWidth={1.5} aria-hidden="true" />
-                  {dateFormatter.format(new Date(registration.eventStartsAt))}
+                  {formatAccountDate(registration.eventStartsAt)}
                 </span>
                 <span className="flex items-center gap-1.5 text-sm text-text-secondary">
                   <MapPin size={16} strokeWidth={1.5} aria-hidden="true" />
-                  {registration.eventLocation}
+                  {accountName(registration.eventLocation, "Ubicación no disponible")}
                 </span>
               </div>
               <div className="flex items-center gap-3">

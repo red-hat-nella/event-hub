@@ -1,77 +1,52 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as api from "../../services/api-client";
-import type { RegistrationStatus } from "../../services/api-client";
-import { useToast } from "../../design-system/molecules/Toast";
-
-export interface UseMyRegistrationsOptions {
-  /** Permite deshabilitar la consulta (p. ej. mientras la sesión no está confirmada). */
-  enabled?: boolean;
-}
-
-/**
- * Convención de hooks de "estado de servidor" (ver `features/events/hooks.ts`):
- * un hook por recurso, `queryKey` como array, se exponen los campos crudos
- * de `useQuery`/`useMutation` para que cada página module su propio layout.
- */
-export function useMyRegistrations(
-  status?: RegistrationStatus,
-  options?: UseMyRegistrationsOptions,
-) {
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as api from '../../services/api-client';
+import { useAuth } from '../../app/auth-context';
+import { privateQueryKey } from '../../app/private-query-keys';
+import { useToast } from '../../design-system/molecules/Toast';
+export interface UseMyRegistrationsOptions { enabled?: boolean }
+export function useMyRegistrations(status?: api.RegistrationStatus, options?: UseMyRegistrationsOptions) {
+  const auth = useAuth();
   return useQuery({
-    queryKey: ["registrations", "me", status],
-    queryFn: () => api.getMyRegistrations(status),
-    enabled: options?.enabled ?? true,
+    queryKey: privateQueryKey(auth.user?.id, auth.generation, 'registrations', 'me', status),
+    queryFn: ({ signal }) => api.getMyRegistrations(status, signal),
+    enabled: auth.status === 'authenticated' && options?.enabled !== false,
+    retry: false,
   });
 }
-
 export function useRegistration(id: string | undefined) {
+  const auth = useAuth();
   return useQuery({
-    queryKey: ["registrations", "detail", id],
-    queryFn: () => api.getRegistration(id as string),
-    enabled: Boolean(id),
-    retry: (failureCount, error) => {
-      if (error instanceof api.ApiError && (error.status === 404 || error.status === 403)) {
-        return false;
-      }
-      return failureCount < 1;
-    },
+    queryKey: privateQueryKey(auth.user?.id, auth.generation, 'registrations', 'detail', id),
+    queryFn: ({ signal }) => api.getRegistration(id!, signal),
+    enabled: auth.status === 'authenticated' && Boolean(id),
+    retry: false,
   });
 }
-
-/**
- * Confirma la inscripción (US3). Genera un `Idempotency-Key` por intento
- * (E-007, contracts/api-gateway.md) y en éxito invalida tanto el detalle
- * del evento (cambia `availableSlots`) como "mis inscripciones".
- */
+function useRegistrationMutation(operation: () => Promise<api.RegistrationDetail>, message: string) {
+  const client = useQueryClient();
+  const { showToast } = useToast();
+  const auth = useAuth();
+  return useMutation({
+    mutationKey: privateQueryKey(auth.user?.id, auth.generation, 'registration-mutation'),
+    mutationFn: async () => {
+      const epoch = api.getSessionGeneration();
+      if (auth.status !== 'authenticated' || epoch !== auth.generation) throw new DOMException('Sesión reemplazada', 'AbortError');
+      const result = await operation();
+      if (epoch !== api.getSessionGeneration()) throw new DOMException('Sesión reemplazada', 'AbortError');
+      return result;
+    },
+    onSuccess: registration => {
+      if (auth.generation !== api.getSessionGeneration()) return;
+      void client.invalidateQueries({ queryKey: privateQueryKey(auth.user?.id, auth.generation, 'registrations') });
+      void client.invalidateQueries({ queryKey: ['events', 'detail', registration.eventId] });
+      showToast(message, 'success');
+    },
+    retry: false,
+  });
+}
 export function useCreateRegistration(eventId: string) {
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-
-  return useMutation({
-    mutationFn: () => api.createRegistration(eventId, crypto.randomUUID()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events", "detail", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["registrations", "me"] });
-      showToast("Inscripción confirmada.", "success");
-    },
-  });
+  return useRegistrationMutation(() => api.createRegistration(eventId, crypto.randomUUID()), 'Inscripción confirmada.');
 }
-
-/**
- * `id` puede llegar `undefined` mientras no hay una inscripción
- * seleccionada (p. ej. en un listado donde el objetivo se fija recién al
- * abrir el `ConfirmDialog`); `mutate()` nunca se invoca en ese estado.
- */
 export function useCancelRegistration(id: string | undefined) {
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-
-  return useMutation({
-    mutationFn: () => api.cancelRegistration(id as string),
-    onSuccess: (registration) => {
-      queryClient.invalidateQueries({ queryKey: ["registrations"] });
-      queryClient.invalidateQueries({ queryKey: ["events", "detail", registration.eventId] });
-      showToast("Inscripción cancelada.", "success");
-    },
-  });
+  return useRegistrationMutation(() => api.cancelRegistration(id!), 'Inscripción cancelada.');
 }

@@ -73,6 +73,59 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+        - name: seed-admin
+          image: IMAGE_USER_SERVICE
+          command: ["node", "dist/bootstrap/seed-admin.js"]
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: user-service-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: user-service-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: user-service-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-users-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-users-credentials
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?schema=public"
+            - name: SEED_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-seed-admin
+                  key: email
+            - name: SEED_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: user-service-seed-admin
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
       containers:
         - name: user-service
           image: IMAGE_USER_SERVICE
@@ -124,13 +177,6 @@ spec:
                 secretKeyRef:
                   name: internal-service-token
                   key: token
-            # Secret `user-service-seed-admin` (clave `password`); el email
-            # no sensible viene del ConfigMap (`SEED_ADMIN_EMAIL`).
-            - name: SEED_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: user-service-seed-admin
-                  key: password
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

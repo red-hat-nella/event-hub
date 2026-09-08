@@ -22,9 +22,9 @@ const base =
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent-terracotta text-text-inverse hover:bg-accent-terracotta-hover active:bg-accent-terracotta-hover",
+    "bg-accent-terracotta-hover text-text-inverse hover:bg-text-primary active:bg-text-primary",
   secondary:
-    "bg-transparent text-secondary-olive border border-secondary-olive hover:bg-secondary-olive hover:text-text-inverse active:bg-secondary-olive-hover active:border-secondary-olive-hover",
+    "bg-transparent text-secondary-olive-hover border border-secondary-olive-hover hover:bg-secondary-olive-hover hover:text-text-inverse active:bg-text-primary active:border-text-primary",
   ghost:
     "bg-transparent text-text-primary hover:bg-bg-surface-alt active:bg-bg-surface-alt",
   destructive:
@@ -32,8 +32,8 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-sm",
-  md: "h-11 px-5 text-base",
+  sm: "min-h-11 px-3 py-2 text-sm",
+  md: "min-h-11 px-5 py-2 text-base",
 };
 
 /**

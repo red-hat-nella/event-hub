@@ -2,6 +2,8 @@ import { useAuth } from "../../app/auth-context";
 import { Avatar } from "../../design-system/atoms/Avatar";
 import { Spinner } from "../../design-system/atoms/Spinner";
 
+import { accountName } from "../../design-system/account-formatters";
+
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Administrador",
   USER: "Persona usuaria",
@@ -31,9 +33,9 @@ export function ProfilePage() {
 
       <div className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-bg-surface p-6">
         <div className="flex items-center gap-4">
-          <Avatar name={user.name} size={56} />
+          <Avatar name={accountName(user.name)} size={56} />
           <div>
-            <p className="font-display text-xl text-text-primary">{user.name}</p>
+            <p className="font-display text-xl text-text-primary">{accountName(user.name)}</p>
             <p className="text-sm text-text-secondary">{ROLE_LABEL[user.role] ?? user.role}</p>
           </div>
         </div>
@@ -41,7 +43,7 @@ export function ProfilePage() {
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-medium text-text-primary">Nombre</dt>
-            <dd className="text-text-secondary">{user.name}</dd>
+            <dd className="text-text-secondary">{accountName(user.name)}</dd>
           </div>
           <div>
             <dt className="font-medium text-text-primary">Correo electrónico</dt>

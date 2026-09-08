@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactNode } from "react";
 
 export interface FormFieldProps {
   /** Debe coincidir con el `id`/`name` del control hijo. */
@@ -32,11 +32,11 @@ export function FormField({
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label htmlFor={htmlFor} className="text-sm font-medium text-text-primary">
-        {label}
-        {required && <span className="text-error"> *</span>}
-      </label>
-      {children}
+      <div className="flex items-center gap-1 text-sm font-medium">
+        <label htmlFor={htmlFor} className="text-text-primary">{label}</label>
+        {required && <span aria-hidden="true" className="text-error"> *</span>}
+      </div>
+      {required && isValidElement<{ 'aria-required'?: boolean }>(children) ? cloneElement(children, { 'aria-required': true }) : children}
       {hint && !error && (
         <p id={hintId} className="text-xs text-text-secondary">
           {hint}

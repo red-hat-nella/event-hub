@@ -11,6 +11,10 @@ import { of, throwError } from 'rxjs';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import {
+  internalRegistration,
+  publicRegistration,
+} from './fixtures/registration-records';
+import {
   createHttpServiceMock,
   HttpServiceMock,
   initTestApp,
@@ -83,7 +87,13 @@ describe('RegistrationsController (e2e) — contracts/api-gateway.md § Inscripc
       .set('Idempotency-Key', 'key-123')
       .expect(201);
 
-    expect(res.body).toEqual(registration);
+    expect(res.body).toEqual({
+      ...registration,
+      userId: undefined,
+      eventName: null,
+      eventStartsAt: null,
+      eventLocation: null,
+    });
     expect(httpServiceMock.post).toHaveBeenCalledWith(
       'http://registration-service.test/internal/registrations',
       { userId: 'u1', eventId: 'e1' },
@@ -133,17 +143,7 @@ describe('RegistrationsController (e2e) — contracts/api-gateway.md § Inscripc
   });
 
   it('GET /api/registrations/me -> 200 con la lista de inscripciones propias', async () => {
-    const items = [
-      {
-        id: 'r1',
-        eventId: 'e1',
-        eventName: 'Feria de arte urbano',
-        eventStartsAt: '2026-10-01T18:00:00.000Z',
-        eventLocation: 'Parque Central',
-        status: 'ACTIVE',
-        createdAt: '2026-09-07T12:00:00.000Z',
-      },
-    ];
+    const items = [internalRegistration];
     httpServiceMock.get.mockReturnValueOnce(of({ data: items }));
 
     const res = await request(app.getHttpServer())
@@ -151,7 +151,7 @@ describe('RegistrationsController (e2e) — contracts/api-gateway.md § Inscripc
       .set('Cookie', [`access_token=${userToken}`])
       .expect(200);
 
-    expect(res.body).toEqual(items);
+    expect(res.body).toEqual({ items: [publicRegistration] });
     expect(httpServiceMock.get).toHaveBeenCalledWith(
       'http://registration-service.test/internal/registrations',
       {
@@ -177,7 +177,13 @@ describe('RegistrationsController (e2e) — contracts/api-gateway.md § Inscripc
       .set('Cookie', [`access_token=${userToken}`])
       .expect(200);
 
-    expect(res.body).toEqual(registration);
+    expect(res.body).toEqual({
+      ...registration,
+      userId: undefined,
+      eventName: null,
+      eventStartsAt: null,
+      eventLocation: null,
+    });
   });
 
   it('GET /api/registrations/:id como otro usuario (no admin) -> 403 FORBIDDEN', async () => {
@@ -232,7 +238,13 @@ describe('RegistrationsController (e2e) — contracts/api-gateway.md § Inscripc
       .set('Cookie', [`access_token=${userToken}`])
       .expect(200);
 
-    expect(res.body).toEqual(cancelled);
+    expect(res.body).toEqual({
+      ...cancelled,
+      userId: undefined,
+      eventName: null,
+      eventStartsAt: null,
+      eventLocation: null,
+    });
     expect(httpServiceMock.delete).toHaveBeenCalledWith(
       'http://registration-service.test/internal/registrations/r1',
       {
@@ -263,5 +275,55 @@ describe('RegistrationsController (e2e) — contracts/api-gateway.md § Inscripc
       .expect(409);
 
     expect(res.body.error.code).toBe('EVENT_ALREADY_STARTED');
+  });
+
+  it.each([
+    null,
+    {},
+    { items: [] },
+    [{ ...internalRegistration, status: 'UNKNOWN' }],
+  ])('rejects malformed upstream list %j', async (data) => {
+    httpServiceMock.get.mockReturnValueOnce(of({ data }));
+    const res = await request(app.getHttpServer())
+      .get('/api/registrations/me')
+      .set('Cookie', [`access_token=${userToken}`])
+      .expect(502);
+    expect(res.body.error.code).toBe('INVALID_UPSTREAM_RESPONSE');
+  });
+
+  it('preserves confirmed empty and normalizes unknown metadata', async () => {
+    httpServiceMock.get.mockReturnValueOnce(of({ data: [] }));
+    const empty = await request(app.getHttpServer())
+      .get('/api/registrations/me')
+      .set('Cookie', [`access_token=${userToken}`])
+      .expect(200);
+    expect(empty.body).toEqual({ items: [] });
+    httpServiceMock.get.mockReturnValueOnce(
+      of({
+        data: [
+          {
+            ...internalRegistration,
+            eventStartsAtSnapshot: 'bad',
+            eventNameSnapshot: null,
+          },
+        ],
+      }),
+    );
+    const partial = await request(app.getHttpServer())
+      .get('/api/registrations/me')
+      .set('Cookie', [`access_token=${userToken}`])
+      .expect(200);
+    expect(partial.body.items[0]).toMatchObject({
+      eventName: null,
+      eventStartsAt: null,
+    });
+  });
+
+  it('rejects unknown status before calling upstream', async () => {
+    await request(app.getHttpServer())
+      .get('/api/registrations/me?status=INVALID')
+      .set('Cookie', [`access_token=${userToken}`])
+      .expect(400);
+    expect(httpServiceMock.get).not.toHaveBeenCalled();
   });
 });
