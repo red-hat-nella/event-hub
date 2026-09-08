@@ -1,0 +1,38 @@
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-bg-canvas text-text-primary font-body;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  /* Foco de teclado visible en todos los controles interactivos (NFR-019) */
+  :focus-visible {
+    outline: 2px solid theme("colors.focus-ring");
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .sr-only-focusable:not(:focus) {
+    @apply sr-only;
+  }
+}

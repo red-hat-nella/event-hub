@@ -1,0 +1,54 @@
+# Overlay `dev`: única variante de ambiente en el alcance de esta feature
+# (plan.md §11 — no se crean overlays/staging ni overlays/production).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+
+# Labels comunes de ambiente/pertenencia (plan.md §5). No se marcan como
+# selectores (includeSelectors: false, el valor por defecto) para no tocar
+# los selectores/plantillas ya fijados en la base.
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: event-hub
+      app.kubernetes.io/environment: dev
+
+# Réplicas explícitas para los 5 workloads de aplicación (ya es el valor
+# por defecto en cada deployment.yaml de la base; se declara aquí de forma
+# explícita per la petición del plan). Las 3 bases de datos son
+# StatefulSet y no se listan aquí porque su réplica única ya está fijada
+# en su propio manifiesto base y no forma parte de "los 5 workloads".
+replicas:
+  - name: frontend
+    count: 1
+  - name: api-gateway
+    count: 1
+  - name: user-service
+    count: 1
+  - name: event-service
+    count: 1
+  - name: registration-service
+    count: 1
+
+# Transformer de imágenes: se deja `newName` igual al placeholder de
+# `.sdd/workloads.yaml` (sin `newTag`) a propósito. Los placeholders
+# (`IMAGE_FRONTEND`, etc.) son referencias de imagen "bare" sin repositorio
+# ni tag — el SDD Orchestrator los reemplaza por una referencia inmutable
+# por digest (`<registry>/<repo>@sha256:...`) durante la etapa `build`/
+# `publish` (plan.md §10 y §12). NO se fija ningún `newTag` (ni siquiera
+# uno de desarrollo) porque cualquier tag mutable —y en particular
+# `:latest`— violaría `policies/conftest/openshift.rego`
+# (`deny` "usa el tag mutable latest"); dejar el placeholder intacto es lo
+# único que garantiza que el manifiesto renderizado nunca contenga
+# `:latest` antes de que el orquestador sustituya por el digest real.
+images:
+  - name: IMAGE_FRONTEND
+    newName: IMAGE_FRONTEND
+  - name: IMAGE_API_GATEWAY
+    newName: IMAGE_API_GATEWAY
+  - name: IMAGE_USER_SERVICE
+    newName: IMAGE_USER_SERVICE
+  - name: IMAGE_EVENT_SERVICE
+    newName: IMAGE_EVENT_SERVICE
+  - name: IMAGE_REGISTRATION_SERVICE
+    newName: IMAGE_REGISTRATION_SERVICE

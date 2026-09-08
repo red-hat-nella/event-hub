@@ -1,0 +1,14 @@
+# Denegación por defecto de todo ingreso en el namespace (plan.md §10.1).
+# Sin `ingress:` declarado: podSelector: {} selecciona todos los Pods del
+# namespace y, al no listar reglas, ningún tráfico entrante queda permitido
+# salvo el que habiliten explícitamente las políticas allow-* siguientes.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  labels:
+    app.kubernetes.io/name: event-hub
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

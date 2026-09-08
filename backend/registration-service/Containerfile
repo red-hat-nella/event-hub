@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+
+# ---- Build stage ----
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY tsconfig*.json nest-cli.json ./
+COPY src ./src
+RUN npm run build
+
+# ---- Runtime stage (no root; conserva devDependencies porque el CLI de
+# Prisma —"prisma"— corre "migrate deploy" en el initContainer del mismo
+# Deployment y solo esta vive como devDependency) ----
+FROM node:20-alpine AS runtime
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOME=/tmp
+WORKDIR /app
+
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/prisma ./prisma
+
+RUN chown -R 1001:0 /app && chmod -R g=u /app
+
+USER 1001
+EXPOSE 3000
+
+CMD ["node", "dist/main.js"]

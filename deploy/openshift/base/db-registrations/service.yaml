@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-registrations
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: db-registrations
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: db-registrations
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP

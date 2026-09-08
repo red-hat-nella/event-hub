@@ -1,0 +1,28 @@
+# Excepción adicional a "solo desde el gateway": event-service también
+# acepta ingreso desde registration-service para reserve/release
+# (plan.md §2 y §10.5), puerto 3000. Esta política se suma (no reemplaza) a
+# allow-gateway-to-domain-services, que ya cubre el ingreso desde
+# api-gateway hacia event-service; ambas políticas con el mismo
+# podSelector de destino se unen (OR) según la semántica estándar de
+# NetworkPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-registration-to-event
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: event-service
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: event-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: registration-service
+      ports:
+        - protocol: TCP
+          port: 3000

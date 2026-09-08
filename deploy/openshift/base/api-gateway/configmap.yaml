@@ -1,0 +1,16 @@
+# Valores no sensibles de api-gateway (plan.md §10). URLs internas ClusterIP
+# de los 3 servicios de dominio + TTL de cookies + nivel de log.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: api-gateway
+data:
+  USER_SERVICE_URL: "http://user-service:3000"
+  EVENT_SERVICE_URL: "http://event-service:3000"
+  REGISTRATION_SERVICE_URL: "http://registration-service:3000"
+  ACCESS_TOKEN_TTL_MS: "1800000"
+  REFRESH_TOKEN_TTL_MS: "604800000"
+  LOG_LEVEL: "info"

@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db-users
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: db-users
+spec:
+  serviceName: db-users
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: event-hub
+      app.kubernetes.io/component: db-users
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: event-hub
+        app.kubernetes.io/component: db-users
+    spec:
+      # Sin runAsUser/fsGroup fijos: OpenShift asigna un UID/GID arbitrario
+      # de la SCC restricted-v2 del namespace (compatible con postgres:16
+      # -alpine, que no requiere un UID concreto para escribir en su propio
+      # volumen). Solo se exige runAsNonRoot=true (policies/conftest).
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_DB
+              value: "users"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-users-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-users-credentials
+                  key: password
+            # Subdirectorio dedicado: evita el fallo de initdb cuando el
+            # punto de montaje del PVC ya contiene entradas reservadas
+            # (p. ej. lost+found) en su raíz.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: event-hub
+          app.kubernetes.io/component: db-users
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        # Sin storageClassName: usa la StorageClass por defecto del clúster
+        # destino (PENDING_VALIDATION, plan.md §15).
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RegistrationStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model Registration {
+  id                    String             @id @default(uuid())
+  userId                String             @map("user_id")
+  eventId               String             @map("event_id")
+  status                RegistrationStatus @default(ACTIVE)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  cancelledAt           DateTime?          @map("cancelled_at")
+  eventNameSnapshot     String             @map("event_name_snapshot")
+  eventStartsAtSnapshot DateTime           @map("event_starts_at_snapshot")
+  eventLocationSnapshot String             @map("event_location_snapshot")
+
+  @@index([userId, eventId])
+  @@map("registrations")
+}
+
+model IdempotencyKey {
+  key          String   @id
+  userId       String   @map("user_id")
+  status       String   @default("PENDING")
+  responseBody Json?    @map("response_body")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("idempotency_keys")
+}

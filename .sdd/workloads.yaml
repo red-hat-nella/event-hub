@@ -5,8 +5,70 @@
   "metadata": { "name": "event-hub" },
   "spec": {
     "exposure": { "routeName": "event-hub", "healthPath": "/healthz" },
-    "workloads": [],
-    "resources": [],
-    "managedSecrets": []
+    "workloads": [
+      {
+        "name": "frontend",
+        "technology": { "runtime": "static", "framework": "react-vite", "version": "18" },
+        "build": {
+          "contextDir": "frontend",
+          "containerfile": "Containerfile",
+          "imagePlaceholder": "IMAGE_FRONTEND"
+        },
+        "runtime": { "kind": "Deployment", "name": "frontend", "required": true }
+      },
+      {
+        "name": "api-gateway",
+        "technology": { "runtime": "nodejs", "framework": "nestjs", "version": "20" },
+        "build": {
+          "contextDir": "backend/api-gateway",
+          "containerfile": "Containerfile",
+          "imagePlaceholder": "IMAGE_API_GATEWAY"
+        },
+        "runtime": { "kind": "Deployment", "name": "api-gateway", "required": true }
+      },
+      {
+        "name": "user-service",
+        "technology": { "runtime": "nodejs", "framework": "nestjs", "version": "20" },
+        "build": {
+          "contextDir": "backend/user-service",
+          "containerfile": "Containerfile",
+          "imagePlaceholder": "IMAGE_USER_SERVICE"
+        },
+        "runtime": { "kind": "Deployment", "name": "user-service", "required": true }
+      },
+      {
+        "name": "event-service",
+        "technology": { "runtime": "nodejs", "framework": "nestjs", "version": "20" },
+        "build": {
+          "contextDir": "backend/event-service",
+          "containerfile": "Containerfile",
+          "imagePlaceholder": "IMAGE_EVENT_SERVICE"
+        },
+        "runtime": { "kind": "Deployment", "name": "event-service", "required": true }
+      },
+      {
+        "name": "registration-service",
+        "technology": { "runtime": "nodejs", "framework": "nestjs", "version": "20" },
+        "build": {
+          "contextDir": "backend/registration-service",
+          "containerfile": "Containerfile",
+          "imagePlaceholder": "IMAGE_REGISTRATION_SERVICE"
+        },
+        "runtime": { "kind": "Deployment", "name": "registration-service", "required": true }
+      }
+    ],
+    "resources": [
+      { "name": "db-users", "kind": "StatefulSet", "required": true },
+      { "name": "db-events", "kind": "StatefulSet", "required": true },
+      { "name": "db-registrations", "kind": "StatefulSet", "required": true }
+    ],
+    "managedSecrets": [
+      { "name": "jwt-signing-key", "keys": ["secret"] },
+      { "name": "internal-service-token", "keys": ["token"] },
+      { "name": "db-users-credentials", "keys": ["username", "password"] },
+      { "name": "db-events-credentials", "keys": ["username", "password"] },
+      { "name": "db-registrations-credentials", "keys": ["username", "password"] },
+      { "name": "user-service-seed-admin", "keys": ["email", "password"] }
+    ]
   }
 }

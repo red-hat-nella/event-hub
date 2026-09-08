@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1
+
+# ---- Build stage ----
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig*.json nest-cli.json ./
+COPY src ./src
+RUN npm run build && npm prune --omit=dev
+
+# ---- Runtime stage (minimo, sin herramientas de build, no root) ----
+FROM node:20-alpine AS runtime
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOME=/tmp
+WORKDIR /app
+
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+
+# Compatible con UID arbitrario de OpenShift (SCC restricted-v2): el
+# propietario/grupo se fija a un UID no privilegiado y al grupo raiz (0)
+# con permisos de grupo equivalentes a los del propietario.
+RUN chown -R 1001:0 /app && chmod -R g=u /app
+
+USER 1001
+EXPOSE 3000
+
+CMD ["node", "dist/main.js"]

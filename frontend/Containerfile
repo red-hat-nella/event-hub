@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+
+# ---- Etapa de build --------------------------------------------------------
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ---- Etapa de runtime -------------------------------------------------------
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+
+USER nginx
+
+COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
+COPY --chown=nginx:nginx nginx/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+ENV API_GATEWAY_URL=http://api-gateway:8080
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD wget -qO- http://127.0.0.1:8080/healthz || exit 1

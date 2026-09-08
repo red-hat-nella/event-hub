@@ -1,0 +1,26 @@
+# Manifiestos base de Event Hub (8 componentes + NetworkPolicy) para
+# OpenShift, gestionados con Kustomize.
+#
+# Cómo renderizar localmente (sin clúster, sin `oc login`):
+#
+#   kubectl kustomize deploy/openshift/base
+#   kubectl kustomize deploy/openshift/overlays/dev
+#
+# Ambos comandos son renderizado puro (no aplican nada a ningún clúster).
+# El overlay `overlays/dev` es el que realmente se usa en el flujo de
+# entrega (`render` en plan.md §12); esta base no se despliega sola.
+#
+# Estructura: un directorio por workload/recurso, cada uno con su propio
+# `kustomization.yaml` (base de Kustomize independiente), agregados aquí.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - frontend
+  - api-gateway
+  - user-service
+  - event-service
+  - registration-service
+  - db-users
+  - db-events
+  - db-registrations
+  - network-policies

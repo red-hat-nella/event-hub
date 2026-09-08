@@ -1,0 +1,14 @@
+# Valores no sensibles de event-service (plan.md §10).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-service-config
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: event-service
+data:
+  DB_HOST: "db-events"
+  DB_PORT: "5432"
+  DB_NAME: "events"
+  DEFAULT_EVENT_DURATION_HOURS: "3"
+  LOG_LEVEL: "info"

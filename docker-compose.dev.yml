@@ -1,0 +1,71 @@
+# Paridad local de Event Hub (quickstart.md §1). Declara únicamente las 3
+# bases PostgreSQL — los 5 workloads de aplicación se ejecutan con
+# `npm run start:dev`/`npm run dev` per quickstart.md §§2-4, fuera de este
+# compose, para desarrollo iterativo rápido sin reconstruir imágenes.
+#
+# Mismos 8 componentes lógicos que deploy/openshift/base (plan.md §6,
+# "Prueba de paridad topológica"): db-users, db-events, db-registrations
+# aquí; frontend/api-gateway/user-service/event-service/registration-service
+# corren como procesos Node locales en el resto de quickstart.md.
+#
+# Puertos publicados en el host (evita colisión entre las 3 instancias de
+# Postgres, todas escuchando en 5432 dentro de su contenedor):
+#   db-users         -> localhost:5432
+#   db-events        -> localhost:5433
+#   db-registrations -> localhost:5434
+#
+# Uso: docker compose -f docker-compose.dev.yml up -d db-users db-events db-registrations
+#      (o `podman-compose -f docker-compose.dev.yml up -d ...`)
+services:
+  db-users:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-users-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d users"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-events:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: events
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-events-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d events"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-registrations:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: registrations
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-registrations-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d registrations"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-users-data:
+  db-events-data:
+  db-registrations-data:

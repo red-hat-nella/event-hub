@@ -1,0 +1,19 @@
+# El frontend es estático (Nginx sirviendo el build de Vite) y no requiere
+# configuración en tiempo de ejecución para las rutas de la SPA. Se declara
+# este ConfigMap por paridad estructural con el resto de workloads (T032) y
+# para fijar, de forma no sensible, el upstream interno que la plantilla
+# frontend/nginx/nginx.conf.template usa en su `proxy_pass /api/*` (mismo
+# Service ClusterIP que consume el resto de internal callers del gateway,
+# ver plan.md §2/§16). Si el Containerfile del frontend resuelve este valor
+# de otra forma (p. ej. hardcodeado en la plantilla), esta clave queda inerte
+# y no rompe nada.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: frontend
+data:
+  API_GATEWAY_UPSTREAM: "http://api-gateway:3000"
+  LOG_LEVEL: "info"

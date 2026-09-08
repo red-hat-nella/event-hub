@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: event-hub
+      app.kubernetes.io/component: api-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: event-hub
+        app.kubernetes.io/component: api-gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api-gateway
+          # Placeholder EXACTO de .sdd/workloads.yaml; reemplazado por digest
+          # por el SDD Orchestrator.
+          image: IMAGE_API_GATEWAY
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: api-gateway-config
+          env:
+            # Secret `jwt-signing-key` (clave `secret`) — verifica los JWT
+            # emitidos por user-service (plan.md §10).
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-signing-key
+                  key: secret
+            # Secret `internal-service-token` (clave `token`) — defensa en
+            # profundidad enviada en toda llamada interna.
+            - name: INTERNAL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: internal-service-token
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3

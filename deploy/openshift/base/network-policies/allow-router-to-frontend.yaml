@@ -1,0 +1,23 @@
+# Permite el ingreso al Pod frontend únicamente desde el namespace del
+# router de OpenShift (plan.md §10.2), en el puerto 8080.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-router-to-frontend
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - protocol: TCP
+          port: 8080

@@ -1,0 +1,14 @@
+# Valores no sensibles de registration-service (plan.md §10).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registration-service-config
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: registration-service
+data:
+  DB_HOST: "db-registrations"
+  DB_PORT: "5432"
+  DB_NAME: "registrations"
+  EVENT_SERVICE_URL: "http://event-service:3000"
+  LOG_LEVEL: "info"

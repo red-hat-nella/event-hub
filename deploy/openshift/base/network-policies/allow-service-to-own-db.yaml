@@ -1,0 +1,69 @@
+# Cada base de datos acepta ingreso únicamente desde su servicio
+# propietario (plan.md §10.6), puerto 5432. Combinado en un solo archivo
+# (3 documentos YAML) en vez de 3 archivos separados porque las 3 reglas
+# son estructuralmente idénticas y viven en el mismo dominio de política.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-user-service-to-db-users
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: db-users
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: db-users
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: user-service
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-event-service-to-db-events
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: db-events
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: db-events
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: event-service
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-registration-service-to-db-registrations
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: db-registrations
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: db-registrations
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: registration-service
+      ports:
+        - protocol: TCP
+          port: 5432

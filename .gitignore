@@ -1,0 +1,35 @@
+# Node / TypeScript
+node_modules/
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Prisma
+backend/*/prisma/*.db
+backend/*/generated/
+
+# Frontend build
+frontend/dist/
+frontend/.vite/
+
+# Playwright / test artifacts
+frontend/test-results/
+frontend/playwright-report/
+backend/*/test-results/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Local data
+/pgdata/

@@ -1,0 +1,30 @@
+# Permite el ingreso a los 3 servicios de dominio (user-service,
+# event-service, registration-service) únicamente desde api-gateway
+# (plan.md §10.4), puerto 3000. Un único NetworkPolicy con `podSelector`
+# por `matchExpressions` (operador In) en vez de 3 archivos separados,
+# porque las 3 reglas son idénticas salvo el Pod de destino.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-domain-services
+  labels:
+    app.kubernetes.io/name: event-hub
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values:
+          - user-service
+          - event-service
+          - registration-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api-gateway
+      ports:
+        - protocol: TCP
+          port: 3000

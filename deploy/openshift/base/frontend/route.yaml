@@ -1,0 +1,22 @@
+# Nombre EXACTO tomado de .sdd/workloads.yaml (spec.exposure.routeName):
+# "event-hub". Único punto de entrada externo de toda la aplicación (ver
+# plan.md §2 y §10). Ningún otro componente declara Route.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: event-hub
+  labels:
+    app.kubernetes.io/name: event-hub
+    app.kubernetes.io/component: frontend
+spec:
+  # host: sin fijar — OpenShift genera el host por defecto del clúster
+  # destino (PENDING_VALIDATION per plan.md §15).
+  to:
+    kind: Service
+    name: frontend
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
